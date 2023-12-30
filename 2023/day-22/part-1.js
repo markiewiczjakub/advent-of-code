@@ -7,14 +7,15 @@ const DATA_FILE_NAMES = ['example.txt', 'input.txt'];
 
 const file = readFileSync(join(ENTRY_DIR, '.', DATA_FILE_NAMES[1])).toString();
 
-const pointsMap = new Map();
 class Point {
+	static points = new Map();
+
 	static of(x, y, z) {
 		const key = `${x}.${y}.${z}`;
-		if (pointsMap.has(key)) return pointsMap.get(key);
+		if (Point.points.has(key)) return Point.points.get(key);
 
 		const newPoint = new Point(x, y, z);
-		pointsMap.set(key, newPoint);
+		Point.points.set(key, newPoint);
 		return newPoint;
 	}
 
@@ -40,6 +41,10 @@ class Brick {
 		this.head = Point.of(...head);
 		this.tail = Point.of(...tail);
 
+		this.bottomEdges = new Set();
+		this.topEdges = new Set();
+		this.edges = new Set();
+
 		this.getPoints();
 	}
 
@@ -48,7 +53,7 @@ class Brick {
 		const isDiffY = this.head.y !== this.tail.y;
 		const isDiffZ = this.head.z !== this.tail.z;
 
-		const points = [];
+		const points = [this.head, this.tail];
 
 		const getMinMax = (axis) => [
 			Math.min(this.head[axis], this.tail[axis]),
@@ -95,19 +100,25 @@ class Brick {
 		}
 	}
 
-	intersectsWith(brick) {
-		for (const point of this.points) {
-			for (const brickPoint of brick.points) {
-				if (
-					point.add(0, 0, -1).compare(brickPoint) ||
-					point.add(0, 0, 1).compare(brickPoint)
-				) {
-					return true;
+	intersectsBottomWith(bricks) {
+		const intersects = [];
+
+		const lowestPoint = this.getLowestPoint();
+
+		for (const brick of bricks) {
+			if (Math.abs(brick.getHighestPoint().z - lowestPoint.z) > 1) {
+				continue;
+			}
+
+			for (const point of this.points) {
+				for (const brickPoint of brick.points) {
+					if (point.add(0, 0, -1).compare(brickPoint))
+						intersects.push(brick.id);
 				}
 			}
 		}
 
-		return false;
+		return intersects;
 	}
 }
 
@@ -133,34 +144,45 @@ const stack = [...bricksSorted];
 const lowered = [];
 while (stack.length) {
 	const brick = stack.shift();
-	while (
-		brick.getLowestPoint().z > 1 &&
-		!lowered.some((otherBrick) => brick.intersectsWith(otherBrick))
-	) {
+
+	let intersects = [];
+	while (brick.getLowestPoint().z > 1) {
+		intersects = brick.intersectsBottomWith(lowered);
+		if (intersects.length > 0) break;
+
 		brick.lower(1);
+	}
+
+	if (intersects.length) {
+		for (const brickId of intersects) {
+			const otherBrick = bricksMap.get(brickId);
+			otherBrick.topEdges.add(brick.id);
+			otherBrick.edges.add(brick.id);
+
+			brick.bottomEdges.add(brickId);
+			brick.edges.add(brickId);
+		}
 	}
 	lowered.push(brick);
 }
 
-const edgesMap = new Map();
+let sum = 0;
+for (const brick of bricksMap.values()) {
+	const topEdges = [...brick.topEdges];
 
-for (const brick of bricks) {
-	let edges;
-	if (!edgesMap.has(brick.id)) {
-		edges = [];
-		edgesMap.set(brick.id, edges);
-	} else {
-		edges = edgesMap.get(brick.id);
-	}
-
-	for (const otherBrick of bricks) {
-		if (brick === otherBrick) continue;
-
-		if (brick.intersectsWith(otherBrick)) {
-			edges.push(otherBrick.id);
+	let canBeRemoved = true;
+	for (const topBrickId of topEdges) {
+		const topBrick = bricksMap.get(topBrickId);
+		const bottomEdges = [...topBrick.bottomEdges].filter(
+			(id) => id !== brick.id
+		);
+		if (bottomEdges.length === 0) {
+			canBeRemoved = false;
+			break;
 		}
 	}
+
+	if (canBeRemoved) sum += 1;
 }
 
-console.log([...edgesMap.values()].filter((c) => c.length > 2).length);
-// TODO: Make it work
+console.log(sum);
