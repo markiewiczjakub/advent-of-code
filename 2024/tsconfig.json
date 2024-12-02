@@ -8,5 +8,5 @@
 		"sourceMap": true,
 		"baseUrl": "."
 	},
-	"include": ["**/*.ts"]
+	"include": ["src/**/*.ts"]
 }
