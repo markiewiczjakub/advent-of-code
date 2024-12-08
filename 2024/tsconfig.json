@@ -6,7 +6,8 @@
 		"noImplicitAny": true,
 		"moduleResolution": "node",
 		"sourceMap": true,
-		"baseUrl": "."
+		"baseUrl": ".",
+		"downlevelIteration": true
 	},
 	"include": ["src/**/*.ts"]
 }
