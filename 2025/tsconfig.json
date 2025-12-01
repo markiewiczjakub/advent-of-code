@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"module": "ES2022",
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"noImplicitAny": true,
+		"moduleResolution": "node",
+		"sourceMap": true,
+		"baseUrl": ".",
+		"downlevelIteration": true
+	},
+	"include": ["src/**/*.ts"]
+}
